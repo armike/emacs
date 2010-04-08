@@ -1,0 +1,45 @@
+* 2010-04-07 - 22:24 :: April  7, 2010 10:24 PM *
+  git setup
+
+Global setup:
+ Download and install Git <http://git-scm.com/download>
+  git config --global user.name "Your Name"
+  git config --global user.email armike@gmail.com
+        
+Next steps:
+  mkdir emacs
+  cd emacs
+  git init
+  touch README
+  git add README
+  git commit -m 'first commit'
+  git remote add origin git@github.com:armike/emacs.git
+  git push origin master
+      
+Existing Git Repo?
+  cd existing_git_repo
+  git remote add origin git@github.com:armike/emacs.git
+  git push origin master
+      
+Importing a Subversion Repo?
+  Click here
+      
+When you're done:
+  Continue
+----------------------------------------------------------------------
+I belieeeeeve all I did differently was run it in cygwin.  You need to
+add this line:
+
+export PATH="$PATH:/cygdrive/c/Program\ Files/Git/bin"
+
+to your `/.bashrc though
+
+mkdir emacs
+git remote add origin git@github.com:armike/emacs.git
+alternatively,
+git pull
+and you're good to go...
+
+
+git clone git@hitbug.com:armike/emacs.git
+git fetch origin
