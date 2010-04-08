@@ -1657,3 +1657,5 @@ Besides the choice of face, it is the same as `buffer-face-mode'."
     (require 'yasnippet) ;; not yasnippet-bundle
     (yas/initialize)
     (yas/load-directory (emacs-dir "yasnippet-0.6.1c/snippets"))
+
+; comment for git testing.
