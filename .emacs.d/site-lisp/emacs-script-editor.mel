@@ -1,0 +1,40 @@
+source "e:/bin/maya/mod_parts/mod_partsBD.mel";
+source "e:/bin/maya/mod_parts/mod_partsBDUI.mel";
+source "e:/bin/maya/mod_parts/mod_partsBDTransfer.mel";
+
+
+string $sourceMesh = "mpTestMeshA";
+string $destMesh = "mpTestMeshB";
+
+// TRANSFER TESTING
+// 
+
+mod_partsBDTransfer.createColorSetsFromParts($sourceMesh);
+
+mod_partsBDTransfer.transferColorSets($sourceMesh, $destMesh);
+
+mod_partsBDTransfer.createPartsFromColorSets($destMesh);
+
+help transferAttributes;
+int $i = 0;
+string $faces[] = 
+    getAttr($destMesh + "Shape.instObjGroups[" + $i + "].objectGrpCompList");
+print($destMesh + "Shape.instObjGroups[" + $i + "].objectGrpCompList");
+print(size(getAttr($destMesh + "Shape.instObjGroups[0]")));
+print $faces;
+// BDUI
+// 
+mod_partsBDUI;
+mod_partsBDTransfer.transfer
+
+
+source "e:/bin/maya/mod_parts/mod_partsBDUI.mel";
+mod_partsBDUI.deleteWindow();
+mod_partsBDUI.createWindow();
+mod_partsBD.runTests();
+getAttr("mpTestMeshA.vtxFace[115][79].red");
+getAttr("mpTestMeshA.")
+
+polyColorPerVertex -q -r -g -b "mpTestMeshA.f[*]";
+
+polyListComponentSelection[

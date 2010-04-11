@@ -1,4 +1,3 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Settings that vary by location
 ;; ------------------------------
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -9,6 +8,9 @@
   ((member-string system-type '("windows-nt" "cygwin" "ms-dos")) "windows")
   ((member-string system-type '("darwin")) "darwin") ;; gnu-darwin, OSX
   (t "unix")))
+
+(defun maross-system-type= (test-type)
+  (string= (maross-system-type)  test-type))
 
 (defun member-string (target L)
   (member-custom target L #'string=))
@@ -101,7 +103,7 @@
  '(transient-mark-mode t))
   
 (setq maross-modeline-face-list 
-      (if (string= (maross-system-type) "windows")
+      (if (maross-system-type= "windows")
           '(:background "#404040" :foreground "#eeeeee" :box nil :slant normal :weight normal :width normal)
         '(:background "#404040" :foreground "#eeeeee" :box nil :slant normal :weight normal :height 103 :width normal :foundry "misc" :family "fixed")
         ))
@@ -341,12 +343,6 @@ Warning: expected to work for Windows only. May not work in other OS."
     (hlt-highlight-regexp-to-end regexp face msg-p mouse-p nth)
     (goto-char original-point)))
 
-(require 'auto-complete)
-(global-auto-complete-mode t)
-(setq ac-auto-start 3) ;; start completion when entered 3 characters
-;; (define-key ac-complete-mode-map (kbd  "C-/") 'ac-complete)
-(global-set-key (kbd "C-/") 'ac-start)
-
 ;; (require 'column-marker)
 ;; Highlight column 80 in foo mode.
 ;;(add-hook 'lisp-mode-hook (lambda () (interactive) (column-marker-1 80)))
@@ -390,43 +386,47 @@ Warning: expected to work for Windows only. May not work in other OS."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; pyflakes
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(if (maross-system-type= "unix")
+    (progn
+      (when (load "flymake" t) 
+        (defun flymake-pyflakes-init () 
+          (let* ((temp-file (flymake-init-create-temp-buffer-copy 
+                             'flymake-create-temp-with-folder-structure)) 
+                 (local-file (file-relative-name 
+                              temp-file 
+                              (file-name-directory buffer-file-name)))) 
+            (list (home "bin/maross_pyflakes") (list temp-file))))
 
-(when (load "flymake" t) 
-  (defun flymake-pyflakes-init () 
-    (let* ((temp-file (flymake-init-create-temp-buffer-copy 
-                       'flymake-create-temp-with-folder-structure)) 
-           (local-file (file-relative-name 
-                        temp-file 
-                        (file-name-directory buffer-file-name)))) 
-      (list (home "bin/maross_pyflakes") (list temp-file))))
+        (add-to-list 'flymake-allowed-file-name-masks 
+                     '("\\.py\\'" flymake-pyflakes-init)))
+      (add-hook 'find-file-hook 'flymake-find-file-hook)
 
-  (add-to-list 'flymake-allowed-file-name-masks 
-               '("\\.py\\'" flymake-pyflakes-init))) 
+      (defun my-flymake-show-help ()
+        (when (get-char-property (point) 'flymake-overlay)
+          (let ((help (get-char-property (point) 'help-echo)))
+            (if help (message "%s" help)))))
 
-(add-hook 'find-file-hook 'flymake-find-file-hook)
+      (add-hook 'post-command-hook 'my-flymake-show-help)
+
+      ;; flymake
+      (defun my-flymake-show-next-error()
+        (interactive)
+        (flymake-goto-next-error)
+        )
+
+      ;; flymake
+      (defun my-flymake-show-prev-error()
+        (interactive)
+        (flymake-goto-prev-error)
+        )
+
+      (global-set-key (kbd "C-S-n") 'my-flymake-show-next-error)
+      (global-set-key (kbd "C-S-p") 'my-flymake-show-prev-error)
+
+      ))
 
 
- (defun my-flymake-show-help ()
-   (when (get-char-property (point) 'flymake-overlay)
-     (let ((help (get-char-property (point) 'help-echo)))
-       (if help (message "%s" help)))))
 
- (add-hook 'post-command-hook 'my-flymake-show-help)
-
-  ;; flymake
-  (defun my-flymake-show-next-error()
-    (interactive)
-    (flymake-goto-next-error)
-    )
-
-  ;; flymake
-  (defun my-flymake-show-prev-error()
-    (interactive)
-    (flymake-goto-prev-error)
-    )
-
-  (global-set-key (kbd "C-S-n") 'my-flymake-show-next-error)
-  (global-set-key (kbd "C-S-p") 'my-flymake-show-prev-error)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; misc
@@ -451,6 +451,12 @@ Warning: expected to work for Windows only. May not work in other OS."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; (require 'color-theme)
+;; (eval-after-load 'color-theme
+;;   '(progn
+;;      (color-theme-initialize)))
+;; (require 'zenburn)
+;; (color-theme-zenburn)
+
 ;; (defun color-theme-maross-dark ()
 ;;   "dark color theme created by maross, Oct. 2009."
 ;;   (interactive)
@@ -609,7 +615,7 @@ Warning: expected to work for Windows only. May not work in other OS."
 ;; Python mode fiddling
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;  (require 'python)
+(require 'python)
 ;; (require 'python-mode) ;; use python-mode.el instead of default python.el
 ;; (define-key python-mode-map (kbd "C-c f") 'python-describe-symbol)
 ;;(define-key py-mode-map (kbd "C-c c-f") 'python-describe-symbol)
@@ -638,14 +644,18 @@ Warning: expected to work for Windows only. May not work in other OS."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (emacs-dir "cedet-1.0pre6/common/"))
 
-(defun no-cedet-p ()
+(defun no-cedet-p-wtf ()
     (or (equal argi "-no_cedet")
         (equal argi "-nc")))
 
-(add-to-list 'command-line-functions 'no-cedet-p)
-(if (or 
-     (member "-no_cedet" command-line-args)
-     (member "-nc" command-line-args))
+(add-to-list 'command-line-functions 'no-cedet-p-wtf)
+
+(defun maross-quick-p ()
+  (or 
+   (member "-no_cedet" command-line-args)
+   (member "-nc" command-line-args)))
+
+(if (maross-quick-p)
     nil
   (progn
     (load-file (emacs-dir "cedet-1.0pre6/common/cedet.el"))
@@ -1393,7 +1403,7 @@ Besides the choice of face, it is the same as `buffer-face-mode'."
 (require 'etom)
 (require 'pulse)
 
-(if (string= (maross-system-type) "windows")
+(if (maross-system-type= "windows")
     (progn 
       (setq pulse-delay 0.01)
       (setq pulse-iterations 5)))
@@ -1652,10 +1662,124 @@ Besides the choice of face, it is the same as `buffer-face-mode'."
 ;; yasnippet
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    (add-to-list 'load-path
-                  (emacs-dir "yasnippet-0.6.1c"))
-    (require 'yasnippet) ;; not yasnippet-bundle
-    (yas/initialize)
-    (yas/load-directory (emacs-dir "yasnippet-0.6.1c/snippets"))
+(add-to-list 'load-path
+                 (emacs-dir "yasnippet-0.6.1c"))
+(require 'yasnippet) ;; not yasnippet-bundle
+;; (setq yas/trigger-key (kbd "C-c <kp-multiply>"))
+(yas/initialize)
+(yas/load-directory (emacs-dir "yasnippet-0.6.1c/snippets"))
 
-; comment for git testing.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Scrollbar stuff
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'sml-modeline)
+(sml-modeline-mode t)
+(scroll-bar-mode 'nil)
+
+(setf mouse-autoselect-window t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Pymacs and rope mode
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(if (and (not (maross-quick-p)) (not (boundp 'ropemacs-mode)))
+    (progn
+      (autoload 'pymacs-apply "pymacs")
+      (autoload 'pymacs-call "pymacs")
+      (autoload 'pymacs-eval "pymacs" nil t)
+      (autoload 'pymacs-exec "pymacs" nil t)
+      (autoload 'pymacs-load "pymacs" nil t)
+      (eval-after-load "pymacs"
+        '(add-to-list 'pymacs-load-path (emacs-dir "py/")))
+      (pymacs-load "ropemacs" "rope-")))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Auto complete, integration with ropemacs and yasnippet
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'auto-complete)
+(global-auto-complete-mode t)
+(setq ac-auto-start 3) ;; start completion when entered 3 characters
+;; (define-key ac-complete-mode-map (kbd  "C-/") 'ac-complete)
+(global-set-key (kbd "C-/") 'ac-start)
+
+(defun prefix-list-elements (list prefix)
+  (let (value)
+    (nreverse
+     (dolist (element list value)
+      (setq value (cons (format "%s%s" prefix element) value))))))
+
+(defvar ac-source-yasnippet
+  '((candidates . ac-yasnippet-candidate)
+    (action . yas/expand)
+    (limit . 3))
+  "Source for Yasnippet.")
+
+(defvar ac-source-rope
+  '((candidates
+     . (lambda ()
+         (prefix-list-elements (rope-completions) ac-target))))
+  "Source for Rope")
+
+(defun ac-python-find ()
+  "Python `ac-find-function'."
+  (require 'thingatpt)
+  (let ((symbol (car-safe (bounds-of-thing-at-point 'symbol))))
+    (if (null symbol)
+        (if (string= "." (buffer-substring (- (point) 1) (point)))
+            (point)
+          nil)
+      symbol)))
+
+(defun ac-python-candidate ()
+  "Python `ac-candidates-function'"
+  (let (candidates)
+    (dolist (source ac-sources)
+      (if (symbolp source)
+          (setq source (symbol-value source)))
+      (let* ((ac-limit (or (cdr-safe (assq 'limit source)) ac-limit))
+             (requires (cdr-safe (assq 'requires source)))
+             cand)
+        (if (or (null requires)
+                (>= (length ac-target) requires))
+            (setq cand
+                  (delq nil
+                        (mapcar (lambda (candidate)
+                                  (propertize candidate 'source source))
+                                (funcall (cdr (assq 'candidates source)))))))
+        (if (and (> ac-limit 1)
+                 (> (length cand) ac-limit))
+            (setcdr (nthcdr (1- ac-limit) cand) nil))
+        (setq candidates (append candidates cand))))
+    (delete-dups candidates)))
+(add-hook 'python-mode-hook
+          (lambda ()
+                 (auto-complete-mode 1)
+                 (set (make-local-variable 'ac-sources)
+                      ;;(append ac-sources '(ac-source-rope) '(ac-source-yasnippet)))
+                      (append ac-sources '(ac-source-rope)))
+                 (set (make-local-variable 'ac-find-function) 'ac-python-find)
+                 (set (make-local-variable 'ac-candidate-function) 'ac-python-candidate)
+                 (set (make-local-variable 'ac-auto-start) nil)))
+
+;;Ryan's python specific tab completion
+(defun ryan-python-tab ()
+  ; Try the following:
+  ; 1) Do a yasnippet expansion
+  ; 2) Do a Rope code completion
+  ; 3) Do an indent
+  (interactive)
+  (if (eql (ac-start) 0)
+      (indent-for-tab-command)))
+
+(defadvice ac-start (before advice-turn-on-auto-start activate)
+  (set (make-local-variable 'ac-auto-start) t))
+(defadvice ac-cleanup (after advice-turn-off-auto-start activate)
+  (set (make-local-variable 'ac-auto-start) nil))
+
+;; (define-key python-mode-map "\t" 'ryan-python-tab)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; End Auto Completion
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
